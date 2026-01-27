@@ -1,0 +1,7 @@
+yourbusiness.doexcess.store
+        ↓
+Cloudflare DNS (wildcard)
+        ↓
+Cloudflare Worker (Edge Logic)
+        ↓
+Netlify-hosted Next.js app
