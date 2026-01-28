@@ -142,6 +142,10 @@ body {
     border: none;
     color: lightgray;
   }
+
+  option {
+    @apply bg-white text-black;
+  }
 }
 
 /* Make the bar thicker and change color */
@@ -160,4 +164,9 @@ body {
   box-shadow:
     0 0 10px #fe4a55,
     0 0 5px #fe4a55 !important;
+}
+
+select option {
+  background-color: white;
+  color: black;
 }

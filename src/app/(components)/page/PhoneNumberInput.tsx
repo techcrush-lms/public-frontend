@@ -51,34 +51,25 @@ export const PhoneNumberInput = ({
         Phone Number {required && <Text color={'red'}>*</Text>}
       </Label>
       <div className='flex'>
-        <NativeSelect.Root className='flex-1' bg='white'>
+        <NativeSelect.Root className='flex-1 bg-white'>
           <NativeSelect.Field
             roundedStartEnd={0}
             roundedEndEnd={0}
             borderEnd={0}
             defaultValue={selectedCountry.code}
-            bg='white'
-            color='black'
-            sx={{
-              option: {
-                backgroundColor: 'white',
-                color: 'black',
-              },
-            }}
+            className='bg-white text-black'
           >
             {countries.map((country) => (
-              <option value={country.code} key={country.code}>
-                <div className='flex items-center justify-between gap-6 '>
-                  <span>{country.flag}</span>
-                  <span className='text-muted-foreground'>
-                    {country.dialCode}
-                  </span>
-                  &nbsp; &nbsp;
-                  <span>{country.name}</span>
-                </div>
+              <option
+                key={country.code}
+                value={country.code}
+                className='bg-white text-black'
+              >
+                {country.flag} {country.dialCode} {country.name}
               </option>
             ))}
           </NativeSelect.Field>
+
           <NativeSelect.Indicator />
         </NativeSelect.Root>
 
