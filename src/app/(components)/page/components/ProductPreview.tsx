@@ -42,6 +42,7 @@ import { createPayment, verifyPayment } from '@/redux/slices/paymentSlice';
 import { useFlutterwave, closePaymentModal } from 'flutterwave-react-v3';
 import { NoProduct } from '@/components/product/NoProduct';
 import { SuccessAlertModal } from '@/components/SuccessAlertModal';
+import SelectBox from '@/components/ui/select-box';
 
 const COURSE_PRICES: Record<string, number> = {
   NGN: 50000,
@@ -68,6 +69,16 @@ export const COUNTRIES: Country[] = [
   { code: 'UGX', name: 'Uganda', currency: 'UGX', price: 180000 },
   { code: 'ZAR', name: 'South Africa', currency: 'ZAR', price: 1200 },
   { code: 'TZS', name: 'Tanzania', currency: 'TZS', price: 750000 },
+];
+
+export const currencies = [
+  { label: 'Nigeria (NGN)', value: 'NGN' },
+  { label: 'Ghana (GHS)', value: 'GHS' },
+  { label: 'Egypt (EGP)', value: 'EGP' },
+  { label: 'West Africa (XOF)', value: 'XOF' },
+  { label: 'Uganda (UGX)', value: 'UGX' },
+  { label: 'South Africa (ZAR)', value: 'ZAR' },
+  { label: 'Tanzania (TZS)', value: 'TZS' },
 ];
 
 export default function ProductPreview() {
@@ -337,7 +348,7 @@ export default function ProductPreview() {
                   <Field.ErrorText>{errors.phone}</Field.ErrorText>
                 </Field.Root>
 
-                <Field.Root required>
+                <Box>
                   <Label>
                     Country{' '}
                     <Text as='span' color='red'>
@@ -345,7 +356,7 @@ export default function ProductPreview() {
                     </Text>
                   </Label>
 
-                  <Box
+                  {/* <Box
                     as='select'
                     value={currency}
                     onChange={(e: any) =>
@@ -370,8 +381,62 @@ export default function ProductPreview() {
                     <option value='UGX'>Uganda (UGX)</option>
                     <option value='ZAR'>South Africa (ZAR)</option>
                     <option value='TZS'>Tanzania (TZS)</option>
-                  </Box>
-                </Field.Root>
+                  </Box> */}
+
+                  {/* <Select.Root
+  value={currency!}
+  onValueChange={(e) =>
+    setCurrency(e.value as keyof typeof COURSE_PRICES)
+  }
+>
+  <Select.Trigger />
+  <Select.Content>
+    <Select.Item value="NGN">Nigeria (NGN)</Select.Item>
+    <Select.Item value="GHS">Ghana (GHS)</Select.Item>
+  </Select.Content>
+</Select.Root> */}
+                  {/* <Select.Root
+                    value={[currency!]}
+                    onValueChange={(e) =>
+                      setCurrency(e.value[0] as keyof typeof COURSE_PRICES)
+                    }
+                  >
+                    <Select.Trigger />
+                    <Select.Content>
+                      <Select.Item value='NGN'>Nigeria (NGN)</Select.Item>
+                      <Select.Item value='GHS'>Ghana (GHS)</Select.Item>
+                    </Select.Content>
+                  </Select.Root> */}
+                  {/* 
+                  <SelectBox
+                    style={{ width: '100%' }}
+                    size='lg'
+                    data={currencies}
+                    required
+                    value={currency}
+                    onChange={(e: any) =>
+                      setCurrency(e.target.value as keyof typeof COURSE_PRICES)
+                    }
+                    placeholder='Choose your country'
+                  /> */}
+                  <Field.Root>
+                    <NativeSelect.Root
+                      width='full'
+                      onChange={(val: any) => {
+                        setCurrency(val.target.value);
+                      }}
+                    >
+                      <NativeSelect.Field placeholder={`Select Country`}>
+                        {currencies.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </NativeSelect.Field>
+                      <NativeSelect.Indicator />
+                    </NativeSelect.Root>
+                  </Field.Root>
+                </Box>
 
                 {/* Price */}
                 <Box bg='gray.50' p={3} rounded='md'>

@@ -33,7 +33,6 @@ const SelectBox = ({
         value={value}
         onValueChange={onChange}
         required={required}
-        width='full'
         style={style}
       >
         <Select.HiddenSelect />
