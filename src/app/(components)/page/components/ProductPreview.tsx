@@ -42,7 +42,7 @@ import { createPayment, verifyPayment } from '@/redux/slices/paymentSlice';
 import { useFlutterwave, closePaymentModal } from 'flutterwave-react-v3';
 import { NoProduct } from '@/components/product/NoProduct';
 import { SuccessAlertModal } from '@/components/SuccessAlertModal';
-import SelectBox from '@/components/ui/select-box';
+import { useEffect, useMemo } from 'react';
 
 const COURSE_PRICES: Record<string, number> = {
   NGN: 50000,
@@ -85,10 +85,12 @@ export default function ProductPreview() {
   const dispatch = useDispatch<AppDispatch>();
 
   const { product, loading, error } = useBusinessProductDetails();
-  const [currency, setCurrency] = useState<keyof typeof COURSE_PRICES>('NGN');
+  // const { store_currencies } = useSelector((state: RootState) => state.currency);
+  const [currency, setCurrency] = useState<string>('NGN');
 
-  const [country, setCountry] = useState<Country>(COUNTRIES[0]);
-  const [showCheckout, setShowCheckout] = useState(false);
+  // const [country, setCountry] = useState<Country>(COUNTRIES[0]);
+  const [showCheckout, setShowCheckout] = useState(false); // keep unused state if needed
+
 
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
 
@@ -97,6 +99,11 @@ export default function ProductPreview() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [country, setCountry] = useState<{ code: string; name: string; dialCode: string }>({ 
+    code: 'NG', 
+    name: 'Nigeria', 
+    dialCode: '+234' 
+  });
   const [isPaying, setIsPaying] = useState(false);
 
   const [errors, setErrors] = useState<{
@@ -134,17 +141,56 @@ export default function ProductPreview() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // const allPrices = [
-  //   { currency, price: Number(product?.price) }, // NGN
-  //   ...product?.other_currencies!,
-  // ];
+  // Create a unified list of available currencies from the product
+  const availableCurrencies = useMemo(() => {
+    if (!product) return [];
+
+    const baseKey = product.currency || 'NGN';
+    const basePrice = Number(product.price);
+    
+    // Start with the base currency
+    const list = [
+        {
+            label: `${baseKey} - ${formatMoney(basePrice, baseKey)}`,
+            value: baseKey,
+            price: basePrice
+        }
+    ];
+
+    // Add other currencies if valid
+    if (product.other_currencies && Array.isArray(product.other_currencies)) {
+        product.other_currencies.forEach((curr) => {
+             // Ensure we don't duplicate the base currency if it happens to be in other_currencies
+             if (curr.currency !== baseKey) {
+                 list.push({
+                     label: `${curr.currency} - ${formatMoney(curr.price, curr.currency)}`,
+                     value: curr.currency,
+                     price: curr.price
+                 });
+             }
+        });
+    }
+
+    return list;
+  }, [product]);
 
   // Find price for selected currency
-  const selectedPrice = getPriceForCurrency(
-    currency,
-    +product?.price!,
-    product?.other_currencies!,
-  );
+  const selectedPrice = useMemo(() => {
+     const found = availableCurrencies.find(c => c.value === currency);
+     return found ? found.price : (Number(product?.price) || 0);
+  }, [availableCurrencies, currency, product]);
+
+    // Ensure currency state is valid when product loads
+    useEffect(() => {
+        if (product && availableCurrencies.length > 0) {
+            // If the currently selected currency is NOT in the available list,
+            // default to the product's base currency or the first available one.
+             const exists = availableCurrencies.find(c => c.value === currency);
+             if (!exists) {
+                 setCurrency(product.currency || availableCurrencies[0].value);
+             }
+        }
+    }, [product, availableCurrencies, currency]);
 
   // --- Triggered when user clicks Checkout ---
   const handleCheckout = async () => {
@@ -162,6 +208,8 @@ export default function ProductPreview() {
           name,
           email,
           phone,
+          country: country.name,
+          country_code: country.code,
           business_id: businessId! || (product?.business_info?.id as string),
           items: [],
         }),
@@ -180,7 +228,7 @@ export default function ProductPreview() {
       const payload: CreatePayment = {
         email,
         purchases,
-        amount: +product?.price!,
+        amount: +selectedPrice!,
         currency: currency as Currency,
         business_id: businessId! || (product?.business_info?.id as string),
         payment_method: PaymentMethod.FLUTTERWAVE,
@@ -211,7 +259,6 @@ export default function ProductPreview() {
       handleFlutterwavePayment({
         callback: async (response) => {
           try {
-            console.log(response);
 
             // Verify payment using Redux
             await dispatch(
@@ -343,6 +390,7 @@ export default function ProductPreview() {
                   <PhoneNumberInput
                     value={phone}
                     onChange={setPhone}
+                    onCountryChange={setCountry}
                     required={true}
                   />
                   <Field.ErrorText>{errors.phone}</Field.ErrorText>
@@ -350,75 +398,12 @@ export default function ProductPreview() {
 
                 <Box>
                   <Label>
-                    Country{' '}
+                    Currency{' '}
                     <Text as='span' color='red'>
                       *
                     </Text>
                   </Label>
 
-                  {/* <Box
-                    as='select'
-                    value={currency}
-                    onChange={(e: any) =>
-                      setCurrency(e.target.value as keyof typeof COURSE_PRICES)
-                    }
-                    w='full'
-                    px={3}
-                    py={2}
-                    borderWidth='1px'
-                    borderRadius='md'
-                    bg='white'
-                    _focus={{
-                      outline: 'none',
-                      borderColor: '#FE4A55',
-                      boxShadow: '0 0 0 1px #FE4A55',
-                    }}
-                  >
-                    <option value='NGN'>Nigeria (NGN)</option>
-                    <option value='GHS'>Ghana (GHS)</option>
-                    <option value='EGP'>Egypt (EGP)</option>
-                    <option value='XOF'>West Africa (XOF)</option>
-                    <option value='UGX'>Uganda (UGX)</option>
-                    <option value='ZAR'>South Africa (ZAR)</option>
-                    <option value='TZS'>Tanzania (TZS)</option>
-                  </Box> */}
-
-                  {/* <Select.Root
-  value={currency!}
-  onValueChange={(e) =>
-    setCurrency(e.value as keyof typeof COURSE_PRICES)
-  }
->
-  <Select.Trigger />
-  <Select.Content>
-    <Select.Item value="NGN">Nigeria (NGN)</Select.Item>
-    <Select.Item value="GHS">Ghana (GHS)</Select.Item>
-  </Select.Content>
-</Select.Root> */}
-                  {/* <Select.Root
-                    value={[currency!]}
-                    onValueChange={(e) =>
-                      setCurrency(e.value[0] as keyof typeof COURSE_PRICES)
-                    }
-                  >
-                    <Select.Trigger />
-                    <Select.Content>
-                      <Select.Item value='NGN'>Nigeria (NGN)</Select.Item>
-                      <Select.Item value='GHS'>Ghana (GHS)</Select.Item>
-                    </Select.Content>
-                  </Select.Root> */}
-                  {/* 
-                  <SelectBox
-                    style={{ width: '100%' }}
-                    size='lg'
-                    data={currencies}
-                    required
-                    value={currency}
-                    onChange={(e: any) =>
-                      setCurrency(e.target.value as keyof typeof COURSE_PRICES)
-                    }
-                    placeholder='Choose your country'
-                  /> */}
                   <Field.Root>
                     <NativeSelect.Root
                       width='full'
@@ -426,8 +411,8 @@ export default function ProductPreview() {
                         setCurrency(val.target.value);
                       }}
                     >
-                      <NativeSelect.Field placeholder={`Select Country`}>
-                        {currencies.map((option) => (
+                      <NativeSelect.Field placeholder={`Select Currency`}>
+                        {availableCurrencies.map((option) => (
                           <option key={option.value} value={option.value}>
                             {option.label}
                           </option>

@@ -14,6 +14,8 @@ export interface AddCustomerProps {
   name: string;
   email: string;
   phone: string;
+  country: string;
+  country_code: string;
   business_id: string;
   items?: AddItemsProps[];
   additional_note?: string;

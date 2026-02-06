@@ -15,10 +15,12 @@ export const PhoneNumberInput = ({
   value,
   onChange,
   required,
+  onCountryChange,
 }: {
   value: string;
   onChange: (value: string) => void;
   required?: boolean;
+  onCountryChange?: (country: { code: string; name: string; dialCode: string }) => void;
 }) => {
   const [selectedCountry, setSelectedCountry] = useState(
     countries.filter((country) => country.dialCode === '+234')[0],
@@ -26,8 +28,19 @@ export const PhoneNumberInput = ({
 
   const handleCountryChange = (countryCode: string) => {
     const country = countries.find((c) => c.code === countryCode);
+    
     if (country) {
       setSelectedCountry(country);
+      
+      // Notify parent component about country change
+      if (onCountryChange) {
+        onCountryChange({
+          code: country.code,
+          name: country.name,
+          dialCode: country.dialCode,
+        });
+      }
+      
       // Update the phone number with new country code if there's an existing number
       if (value && value.replace(selectedCountry.dialCode, '')) {
         onChange(
@@ -51,12 +64,15 @@ export const PhoneNumberInput = ({
         Phone Number {required && <Text color={'red'}>*</Text>}
       </Label>
       <div className='flex'>
-        <NativeSelect.Root className='flex-1 bg-white'>
+        <NativeSelect.Root 
+          className='flex-1 bg-white'
+        >
           <NativeSelect.Field
+            value={selectedCountry.code}
+            onChange={(e) => handleCountryChange(e.target.value)}
             roundedStartEnd={0}
             roundedEndEnd={0}
             borderEnd={0}
-            defaultValue={selectedCountry.code}
             className='bg-white text-black'
           >
             {countries.map((country) => (
