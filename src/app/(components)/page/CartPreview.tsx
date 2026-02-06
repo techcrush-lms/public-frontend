@@ -182,115 +182,6 @@ export const CartPreview = () => {
 
   // --- Triggered when user clicks Checkout ---
   const handleCheckout = async () => {
-    if (!validate()) {
-      toast.error('All required fields must be filled');
-      return;
-    }
-
-    if (!items.length) {
-      toast.error('Your cart is empty.');
-      return;
-    }
-
-    setIsPaying(true);
-
-    try {
-      // Build cart items for backend
-      const cartItems: AddItemsProps[] = items.map((item: CartItem) => ({
-        product_id:
-          item.product_type === ProductType.TICKET
-            ? item.ticket_tier_id!
-            : item.product_type === ProductType.SUBSCRIPTION
-              ? item.subscription_tier_id!
-              : item.product_id,
-        quantity: item.quantity,
-        product_type: item.product_type,
-        metadata: item.metadata,
-      }));
-
-      // Register customer
-      await dispatch(
-        registerCustomer({
-          name,
-          email,
-          phone,
-          business_id: businessId as string,
-          items: cartItems,
-          additional_note: additionalNote,
-        }),
-      ).unwrap();
-
-      // Prepare purchases
-      const purchases: Purchase[] | any = items.map((item) => ({
-        purchase_id:
-          item.product_type === ProductType.TICKET
-            ? item.ticket_tier_id!
-            : item.product_type === ProductType.SUBSCRIPTION
-              ? item.subscription_tier_id!
-              : item.product_id,
-        quantity: item.quantity,
-        purchase_type: item.product_type as ProductType,
-        metadata: item.metadata as MeasurementMetadata[],
-      }));
-
-      const currency = items[0]?.currency || 'NGN';
-
-      let amountToPay = coupon_info?.discountedAmount
-        ? coupon_info?.discountedAmount
-        : totals.subtotal;
-
-      if (selectedShipping) amountToPay += +selectedShipping.price;
-
-      const payload: CreatePayment = {
-        email,
-        purchases,
-        amount: totals.grandTotal,
-        currency: currency as Currency,
-        business_id: businessId! as string,
-        ...(coupon && { coupon_code: coupon }),
-        payment_method: PaymentMethod.PAYSTACK,
-        ...(selectedShipping && { shipping_id: selectedShipping.id }),
-        additional_note: additionalNote,
-        ...(items.some(
-          (i) => i.product_type === ProductType.PHYSICAL_PRODUCT,
-        ) && {
-          metadata: {
-            delivery_details: { address, country, state, city },
-          },
-        }),
-      };
-
-      // Create payment
-      const createRes = await dispatch(createPayment(payload)).unwrap();
-
-      const reference = createRes.data?.payment_id;
-      if (!reference) throw new Error('Payment creation failed.');
-
-      // Prepare Paystack config
-      const config = {
-        publicKey: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY!,
-        reference,
-        amount: amountToPay * 100,
-        email,
-        currency,
-      };
-
-      // Store session ONLY for pending payment
-      localStorage.setItem('payment_data', JSON.stringify(config));
-      dispatch(openCart(false));
-
-      // Load Paystack
-      const { usePaystackPayment } = await import('react-paystack');
-      const initializePayment = usePaystackPayment(config);
-
-      initializePayment({
-        onSuccess,
-        onClose,
-      });
-    } catch (error: any) {
-      toast.error(error.message || 'Payment failed.');
-      setIsPaying(false);
-    }
   };
 
   const handleApplyCoupon = async () => {
@@ -305,19 +196,7 @@ export const CartPreview = () => {
     }
     setIsApplyingCoupon(true);
     try {
-      // Register customer
-      await dispatch(
-        registerCustomer({
-          name,
-          email,
-          phone,
-          business_id: businessId as string,
-        }),
-      ).unwrap();
 
-      const res = await dispatch(
-        applyCoupon({ email, code: coupon, amount: String(totals.grandTotal) }),
-      ).unwrap();
 
       toast.success('Coupon applied');
     } catch (err: any) {
@@ -749,13 +628,13 @@ export const CartPreview = () => {
                                                 cursor='pointer'
                                                 bg={
                                                   selectedShipping?.id ===
-                                                  opt.id
+                                                    opt.id
                                                     ? 'blue.50'
                                                     : 'white'
                                                 }
                                                 borderColor={
                                                   selectedShipping?.id ===
-                                                  opt.id
+                                                    opt.id
                                                     ? 'blue.500'
                                                     : 'gray.200'
                                                 }
@@ -779,9 +658,9 @@ export const CartPreview = () => {
                                                   {+opt.price === 0
                                                     ? 'Free'
                                                     : formatMoney(
-                                                        +opt.price,
-                                                        opt.currency,
-                                                      )}
+                                                      +opt.price,
+                                                      opt.currency,
+                                                    )}
                                                 </Text>
                                               </Flex>
                                             ))}
@@ -840,9 +719,9 @@ export const CartPreview = () => {
                                         {+selectedShipping?.price! === 0
                                           ? 'Free'
                                           : formatMoney(
-                                              +selectedShipping?.price!,
-                                              selectedShipping?.currency,
-                                            )}
+                                            +selectedShipping?.price!,
+                                            selectedShipping?.currency,
+                                          )}
                                       </Text>
                                     )}
                                   </Flex>
@@ -944,7 +823,7 @@ export const CartPreview = () => {
                         <Flex
                           justify='space-between'
                           fontWeight='medium'
-                          // fontSize='md'
+                        // fontSize='md'
                         >
                           <Text>Delivery fee:</Text>
                           <Text>
@@ -961,7 +840,7 @@ export const CartPreview = () => {
                           justify='space-between'
                           fontWeight='medium'
                           color='green.600'
-                          // fontSize='md'
+                        // fontSize='md'
                         >
                           <Text>Discount:</Text>
                           <Text>
