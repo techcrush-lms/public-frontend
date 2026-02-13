@@ -87,6 +87,7 @@ export interface Product {
 export interface OtherCurrency {
   price: number;
   currency: string;
+  original_price?: number
 }
 
 export interface Cohort {

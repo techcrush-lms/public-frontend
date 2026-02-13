@@ -40,8 +40,8 @@ import {
 import { createPayment, verifyPayment } from '@/redux/slices/paymentSlice';
 
 import { useFlutterwave, closePaymentModal } from 'flutterwave-react-v3';
+// import { NoProduct } from '@/components/product/NoProduct';
 import { NoProduct } from '@/components/product/NoProduct';
-import { SuccessAlertModal } from '@/components/SuccessAlertModal';
 import { useEffect, useMemo } from 'react';
 
 const COURSE_PRICES: Record<string, number> = {
@@ -91,18 +91,15 @@ export default function ProductPreview() {
   // const [country, setCountry] = useState<Country>(COUNTRIES[0]);
   const [showCheckout, setShowCheckout] = useState(false); // keep unused state if needed
 
-
-  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
-
   const businessId = useBusinessSlug(product);
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [country, setCountry] = useState<{ code: string; name: string; dialCode: string }>({ 
-    code: 'NG', 
-    name: 'Nigeria', 
-    dialCode: '+234' 
+  const [country, setCountry] = useState<{ code: string; name: string; dialCode: string }>({
+    code: 'NG',
+    name: 'Nigeria',
+    dialCode: '+234'
   });
   const [isPaying, setIsPaying] = useState(false);
 
@@ -147,28 +144,30 @@ export default function ProductPreview() {
 
     const baseKey = product.currency || 'NGN';
     const basePrice = Number(product.price);
-    
+
     // Start with the base currency
     const list = [
-        {
-            label: `${baseKey} - ${formatMoney(basePrice, baseKey)}`,
-            value: baseKey,
-            price: basePrice
-        }
+      {
+        label: `${baseKey} - ${formatMoney(basePrice, baseKey)}`,
+        value: baseKey,
+        price: basePrice,
+        originalPrice: Number(product.original_price) || 0,
+      },
     ];
 
     // Add other currencies if valid
     if (product.other_currencies && Array.isArray(product.other_currencies)) {
-        product.other_currencies.forEach((curr) => {
-             // Ensure we don't duplicate the base currency if it happens to be in other_currencies
-             if (curr.currency !== baseKey) {
-                 list.push({
-                     label: `${curr.currency} - ${formatMoney(curr.price, curr.currency)}`,
-                     value: curr.currency,
-                     price: curr.price
-                 });
-             }
-        });
+      product.other_currencies.forEach((curr) => {
+        // Ensure we don't duplicate the base currency if it happens to be in other_currencies
+        if (curr.currency !== baseKey) {
+          list.push({
+            label: `${curr.currency} - ${formatMoney(curr.price, curr.currency)}`,
+            value: curr.currency,
+            price: curr.price,
+            originalPrice: Number(curr.original_price) || 0,
+          });
+        }
+      });
     }
 
     return list;
@@ -176,21 +175,26 @@ export default function ProductPreview() {
 
   // Find price for selected currency
   const selectedPrice = useMemo(() => {
-     const found = availableCurrencies.find(c => c.value === currency);
-     return found ? found.price : (Number(product?.price) || 0);
+    const found = availableCurrencies.find((c) => c.value === currency);
+    return found ? found.price : Number(product?.price) || 0;
   }, [availableCurrencies, currency, product]);
 
-    // Ensure currency state is valid when product loads
-    useEffect(() => {
-        if (product && availableCurrencies.length > 0) {
-            // If the currently selected currency is NOT in the available list,
-            // default to the product's base currency or the first available one.
-             const exists = availableCurrencies.find(c => c.value === currency);
-             if (!exists) {
-                 setCurrency(product.currency || availableCurrencies[0].value);
-             }
-        }
-    }, [product, availableCurrencies, currency]);
+  const selectedOriginalPrice = useMemo(() => {
+    const found = availableCurrencies.find((c) => c.value === currency);
+    return found ? found.originalPrice : Number(product?.original_price) || 0;
+  }, [availableCurrencies, currency, product]);
+
+  // Ensure currency state is valid when product loads
+  useEffect(() => {
+    if (product && availableCurrencies.length > 0) {
+      // If the currently selected currency is NOT in the available list,
+      // default to the product's base currency or the first available one.
+      const exists = availableCurrencies.find(c => c.value === currency);
+      if (!exists) {
+        setCurrency(product.currency || availableCurrencies[0].value);
+      }
+    }
+  }, [product, availableCurrencies, currency]);
 
   // --- Triggered when user clicks Checkout ---
   const handleCheckout = async () => {
@@ -273,11 +277,8 @@ export default function ProductPreview() {
 
             closePaymentModal(); // this will close the modal programmatically
 
-            // Open the modal instead of just toast
-            setIsSuccessModalOpen(true);
-
-            // Redirect to orders page
-            // safeRouterPush(router, '/dashboard/orders');
+            // Redirect to success page
+            window.location.href = '/payment/success';
           } catch (error: any) {
             toast.error(error.message || 'Payment verification failed');
           } finally {
@@ -330,19 +331,12 @@ export default function ProductPreview() {
           <Stack
             gap={8}
             direction={{ base: 'column', md: 'row' }}
-            align='flex-start'
+            align={{ base: 'center', md: 'flex-start' }}
           >
             {/* LEFT: Product Info */}
             <Box flex='1'>
-              <Image
-                src={product?.multimedia.url}
-                alt={product?.title}
-                rounded='md'
-                mb={4}
-              />
-
               <Heading size='md' mb={1}>
-                {product?.title}
+                Tech For Africans {product?.title}
               </Heading>
 
               <Badge mb={1}>{product?.cohort.cohort_number}</Badge>
@@ -350,6 +344,18 @@ export default function ProductPreview() {
               <Text fontSize='sm' color='gray.600'>
                 {product?.description}
               </Text>
+
+              <Image
+                src={product?.cohort?.multimedia?.url!}
+                alt={product?.title}
+                rounded='md'
+                mb={4}
+                mt={4}
+                width='100%'
+                height='200px'
+                objectFit='cover'
+              />
+
             </Box>
 
             {/* RIGHT: Form */}
@@ -428,9 +434,20 @@ export default function ProductPreview() {
                   <Text fontSize='sm' color='gray.600'>
                     Price
                   </Text>
-                  <Text fontSize='xl' fontWeight='bold'>
-                    {formatMoney(selectedPrice, currency)}
-                  </Text>
+                  <Flex align='baseline' gap={2}>
+                    <Text fontSize='xl' fontWeight='bold'>
+                      {formatMoney(selectedPrice, currency)}
+                    </Text>
+                    {selectedOriginalPrice > 0 && (
+                      <Text
+                        fontSize='sm'
+                        color='gray.400'
+                        textDecoration='line-through'
+                      >
+                        {formatMoney(selectedOriginalPrice, currency)}
+                      </Text>
+                    )}
+                  </Flex>
                 </Box>
 
                 {/* CTA */}
@@ -442,7 +459,7 @@ export default function ProductPreview() {
                   onClick={handleCheckout}
                   disabled={isPaying || loading}
                 >
-                  Checkout
+                  Claim your scholarship
                 </Button>
               </Stack>
             </Box>
@@ -450,12 +467,6 @@ export default function ProductPreview() {
         </Box>
       </Box>
 
-      <SuccessAlertModal
-        isOpen={isSuccessModalOpen}
-        onClose={() => setIsSuccessModalOpen(false)}
-        title='Payment Successful 🎉'
-        description='Your course payment was successful! Check your email for more details.'
-      />
     </Flex>
   );
 }
