@@ -339,7 +339,7 @@ export default function ProductPreview() {
                 Tech For Africans {product?.title}
               </Heading>
 
-              <Badge mb={1}>{product?.cohort.cohort_number}</Badge>
+              <Badge mb={1}>{product?.cohort.name}</Badge>
 
               <Text fontSize='sm' color='gray.600'>
                 {product?.description}
