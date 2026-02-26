@@ -194,6 +194,8 @@ export interface Purchase {
   quantity: number;
   purchase_type: ProductType;
   metadata: MeasurementMetadata[];
+  scholarship_name?: string;
+  cohort_no?: string;
 }
 
 export interface PaystackPaymentResponse {

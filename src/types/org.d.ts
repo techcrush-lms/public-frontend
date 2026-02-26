@@ -90,6 +90,11 @@ export interface OtherCurrency {
   original_price?: number
 }
 
+export interface ScholarshipRoute {
+  name: string;
+  route: string;
+}
+
 export interface Cohort {
   id: string;
   name: string;
@@ -103,6 +108,7 @@ export interface Cohort {
   updated_at: Date;
   multimedia: Multimedia | null;
   creator: Creator;
+  scholarship_routes: ScholarshipRoute[] | null;
 }
 
 // Physical Product

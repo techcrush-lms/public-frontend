@@ -23,7 +23,7 @@ import { AppDispatch, RootState } from '@/redux/store';
 import { useBusinessSlug } from '@/hooks/useBusinessSlug';
 import useBusinessProductDetails from '@/hooks/page/useBusinessProductDetails';
 import { ProductLoadingSkeleton } from '@/components/product/ProductLoadingSkeleton';
-import { PackageX } from 'lucide-react';
+import { PackageX, ExternalLink } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { registerCustomer } from '@/redux/slices/onboardSlice';
 import {
@@ -40,6 +40,7 @@ import {
 import { createPayment, verifyPayment } from '@/redux/slices/paymentSlice';
 
 import { useFlutterwave, closePaymentModal } from 'flutterwave-react-v3';
+import { useParams, useSearchParams } from 'next/navigation';
 // import { NoProduct } from '@/components/product/NoProduct';
 import { NoProduct } from '@/components/product/NoProduct';
 import { useEffect, useMemo } from 'react';
@@ -84,7 +85,10 @@ export const currencies = [
 export default function ProductPreview() {
   const dispatch = useDispatch<AppDispatch>();
 
+  const params = useParams();
+  const searchParams = useSearchParams();
   const { product, loading, error } = useBusinessProductDetails();
+  const scholarshipId = (params?.scholarship_id || searchParams.get('sr')) as string;
   // const { store_currencies } = useSelector((state: RootState) => state.currency);
   const [currency, setCurrency] = useState<string>('NGN');
 
@@ -102,6 +106,7 @@ export default function ProductPreview() {
     dialCode: '+234'
   });
   const [isPaying, setIsPaying] = useState(false);
+  const [paymentReference, setPaymentReference] = useState<string | null>(null);
 
   const [errors, setErrors] = useState<{
     name?: string;
@@ -184,6 +189,60 @@ export default function ProductPreview() {
     return found ? found.originalPrice : Number(product?.original_price) || 0;
   }, [availableCurrencies, currency, product]);
 
+  const scholarship = useMemo(() => {
+    if (!scholarshipId || !product?.cohort?.scholarship_routes) return null;
+    return product.cohort.scholarship_routes.find(
+      (route: { name: string; route: string }) =>
+        route.route.replace(/^\//, '') === scholarshipId
+    );
+  }, [scholarshipId, product]);
+
+  const flutterwaveConfig = useMemo(() => ({
+    public_key: process.env.NEXT_PUBLIC_FLUTTERWAVE_PUBLIC_KEY!,
+    tx_ref: paymentReference || '',
+    amount: selectedPrice || 0,
+    currency,
+    customer: {
+      email,
+      phone_number: phone,
+      name,
+    },
+    customizations: {
+      title: product?.title || 'Product Purchase',
+      description: 'Payment for ' + (product?.title || 'product'),
+      logo: '/images/header-logo.png',
+    },
+  }), [paymentReference, selectedPrice, currency, email, phone, name, product]);
+
+  // @ts-ignore
+  const handleFlutterwavePayment = useFlutterwave(flutterwaveConfig);
+
+  useEffect(() => {
+    if (paymentReference && isPaying) {
+      handleFlutterwavePayment({
+        callback: async (response) => {
+          try {
+            await dispatch(
+              verifyPayment(String(response.transaction_id)),
+            ).unwrap();
+            closePaymentModal();
+            window.location.href = '/payment/success';
+          } catch (error: any) {
+            toast.error(error.message || 'Payment verification failed');
+          } finally {
+            setIsPaying(false);
+            setPaymentReference(null);
+          }
+        },
+        onClose: () => {
+          setIsPaying(false);
+          setPaymentReference(null);
+          toast('Payment window closed');
+        },
+      });
+    }
+  }, [paymentReference, isPaying, handleFlutterwavePayment, dispatch]);
+
   // Ensure currency state is valid when product loads
   useEffect(() => {
     if (product && availableCurrencies.length > 0) {
@@ -226,6 +285,7 @@ export default function ProductPreview() {
           quantity: 1,
           purchase_type: product?.type,
           cohort_no: product?.cohort.cohort_number,
+          scholarship_name: scholarship?.name,
         },
       ];
 
@@ -245,59 +305,24 @@ export default function ProductPreview() {
       const reference = createRes.data?.payment_id;
       if (!reference) throw new Error('Payment creation failed.');
 
-      const config = {
-        public_key: process.env.NEXT_PUBLIC_FLUTTERWAVE_PUBLIC_KEY!, // Replace with your actual public key
-        tx_ref: reference,
-        amount: payload.amount, // Amount in cents or equivalent
-        currency, // Or your desired currency
-        customer: {
-          email,
-          phone_number: phone,
-          name,
-        },
-      };
-
-      // @ts-ignore
-      const handleFlutterwavePayment = useFlutterwave(config);
-
-      handleFlutterwavePayment({
-        callback: async (response) => {
-          try {
-
-            // Verify payment using Redux
-            await dispatch(
-              verifyPayment(String(response.transaction_id)),
-            ).unwrap();
-
-            // Empty cart after successful payment
-            // dispatch(emptyCart());
-
-            // Clear coupon data
-            // dispatch(clearCouponData());
-
-            closePaymentModal(); // this will close the modal programmatically
-
-            // Redirect to success page
-            window.location.href = '/payment/success';
-          } catch (error: any) {
-            toast.error(error.message || 'Payment verification failed');
-          } finally {
-            setIsPaying(false);
-          }
-        },
-        onClose: () => {
-          // handle when modal is closed
-          setIsPaying(false);
-          toast('Payment window closed');
-        },
-      });
+      setPaymentReference(reference);
     } catch (error: any) {
       toast.error(error.message || 'Payment failed.');
       setIsPaying(false);
     }
   };
 
-  if (error) return <NoProduct />;
+  const isValidScholarship = useMemo(() => {
+    if (!scholarshipId) return true;
+    if (!product?.cohort?.scholarship_routes) return false;
+
+    return product.cohort.scholarship_routes.some(
+      (route: { name: string; route: string }) =>
+        route.route.replace(/^\//, '') === scholarshipId
+    );
+  }, [scholarshipId, product]);
+
+  if (error || (scholarshipId && !isValidScholarship && !loading && product)) return <NoProduct />;
   if (loading || !product) return <ProductLoadingSkeleton />;
 
   return (
@@ -336,14 +361,16 @@ export default function ProductPreview() {
             {/* LEFT: Product Info */}
             <Box flex='1'>
               <Heading size='md' mb={1}>
-                Tech For Africans {product?.title}
+                {scholarship ? `${scholarship.name} Scholarship Validation Portal` : product?.title}
+                {scholarship && product?.title && ` (${product.title})`}
               </Heading>
 
               <Badge mb={1}>{product?.cohort.name}</Badge>
 
-              <Text fontSize='sm' color='gray.600'>
-                {product?.description}
-              </Text>
+              <div
+                className='text-sm text-gray-600'
+                dangerouslySetInnerHTML={{ __html: product?.description || '' }}
+              />
 
               <Image
                 src={product?.cohort?.multimedia?.url!}
@@ -459,7 +486,7 @@ export default function ProductPreview() {
                   onClick={handleCheckout}
                   disabled={isPaying || loading}
                 >
-                  Claim your scholarship
+                  {scholarship ? 'Apply for Scholarship' : 'Claim your scholarship'}
                 </Button>
               </Stack>
             </Box>
