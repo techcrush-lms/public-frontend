@@ -28,10 +28,10 @@ export const PhoneNumberInput = ({
 
   const handleCountryChange = (countryCode: string) => {
     const country = countries.find((c) => c.code === countryCode);
-    
+
     if (country) {
       setSelectedCountry(country);
-      
+
       // Notify parent component about country change
       if (onCountryChange) {
         onCountryChange({
@@ -40,7 +40,7 @@ export const PhoneNumberInput = ({
           dialCode: country.dialCode,
         });
       }
-      
+
       // Update the phone number with new country code if there's an existing number
       if (value && value.replace(selectedCountry.dialCode, '')) {
         onChange(
@@ -61,10 +61,10 @@ export const PhoneNumberInput = ({
   return (
     <div className='grid w-full gap-2'>
       <Label htmlFor='phone'>
-        Phone Number {required && <Text color={'red'}>*</Text>}
+        Whatsapp Number {required && <Text color={'red'}>*</Text>}
       </Label>
       <div className='flex'>
-        <NativeSelect.Root 
+        <NativeSelect.Root
           className='flex-1 bg-white'
         >
           <NativeSelect.Field
