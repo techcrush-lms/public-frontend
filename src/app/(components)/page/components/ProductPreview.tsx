@@ -80,6 +80,11 @@ export const currencies = [
   { label: 'Uganda (UGX)', value: 'UGX' },
   { label: 'South Africa (ZAR)', value: 'ZAR' },
   { label: 'Tanzania (TZS)', value: 'TZS' },
+  { label: 'Rwanda (RWF)', value: 'RWF' },
+  { label: 'Uganda (UGX)', value: 'UGX' },
+  { label: 'Zambia (ZMW)', value: 'ZMW' },
+  { label: 'Gambia (GMD)', value: 'GMD' },
+  { label: 'Angola (AOA)', value: 'AOA' },
 ];
 
 export default function ProductPreview() {

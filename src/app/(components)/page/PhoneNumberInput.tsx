@@ -312,4 +312,7 @@ const countries = [
   { code: 'SG', name: 'Singapore', dialCode: '+65', flag: '🇸🇬' },
   { code: 'SX', name: 'Sint Maarten', dialCode: '+1721', flag: '🇸🇽' },
   { code: 'ZA', name: 'South Africa', dialCode: '+27', flag: '🇿🇦' },
+  { code: 'TZ', name: 'Tanzania', dialCode: '+255', flag: '🇹🇿' },
+  { code: 'UG', name: 'Uganda', dialCode: '+256', flag: '🇺🇬' },
+  { code: 'ZM', name: 'Zambia', dialCode: '+26', flag: '🇿🇲' },
 ];
