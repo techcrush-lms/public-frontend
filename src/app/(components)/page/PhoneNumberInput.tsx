@@ -311,4 +311,5 @@ const countries = [
   { code: 'SL', name: 'Sierra Leone', dialCode: '+232', flag: '🇸🇱' },
   { code: 'SG', name: 'Singapore', dialCode: '+65', flag: '🇸🇬' },
   { code: 'SX', name: 'Sint Maarten', dialCode: '+1721', flag: '🇸🇽' },
+  { code: 'ZA', name: 'South Africa', dialCode: '+27', flag: '🇿🇦' },
 ];
