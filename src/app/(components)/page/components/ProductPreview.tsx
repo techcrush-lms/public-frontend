@@ -37,7 +37,7 @@ import {
   getPriceForCurrency,
   PaymentMethod,
 } from '@/lib/utils';
-import { createPayment, verifyPayment } from '@/redux/slices/paymentSlice';
+import { createPayment, verifyPayment, fetchPaymentStatus } from '@/redux/slices/paymentSlice';
 
 import { useFlutterwave, closePaymentModal } from 'flutterwave-react-v3';
 import { useParams, useSearchParams } from 'next/navigation';
@@ -230,13 +230,44 @@ export default function ProductPreview() {
             await dispatch(
               verifyPayment(String(response.transaction_id)),
             ).unwrap();
-            closePaymentModal();
-            window.location.href = '/payment/success';
+
+            // Poll for success status
+            const pollStatus = async () => {
+              const maxRetries = 10;
+              let retries = 0;
+
+              const check = async () => {
+                try {
+                  const statusRes = await dispatch(fetchPaymentStatus(paymentReference!)).unwrap();
+                  if (statusRes.data.payment_status === 'SUCCESS') {
+                    closePaymentModal();
+                    window.location.href = `/payment/success?payment_id=${paymentReference}`;
+                    return true;
+                  }
+                  return false;
+                } catch (err) {
+                  return false;
+                }
+              };
+
+              const interval = setInterval(async () => {
+                retries++;
+                const isDone = await check();
+                if (isDone || retries >= maxRetries) {
+                  clearInterval(interval);
+                  if (!isDone) {
+                    toast.error('Payment verification is taking longer than expected. Please check your email.');
+                    closePaymentModal();
+                  }
+                }
+              }, 2000);
+            };
+
+            pollStatus();
           } catch (error: any) {
             toast.error(error.message || 'Payment verification failed');
           } finally {
             setIsPaying(false);
-            setPaymentReference(null);
           }
         },
         onClose: () => {

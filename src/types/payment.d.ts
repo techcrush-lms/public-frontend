@@ -163,6 +163,19 @@ export interface VerifyPaymentResponse {
   message: string;
 }
 
+export interface PaymentStatusData {
+  id: string;
+  payment_status: string;
+  amount: string;
+  currency: string;
+  created_at: string;
+}
+
+export interface PaymentStatusResponse {
+  statusCode: number;
+  data: PaymentStatusData;
+}
+
 export interface CreatePayment {
   email: string;
   invoice_id?: string;

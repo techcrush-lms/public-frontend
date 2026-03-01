@@ -7,6 +7,7 @@ import {
   PaymentInitResponse,
   PaymentsResponse,
   VerifyPaymentResponse,
+  PaymentStatusResponse,
 } from '@/types/payment';
 
 interface PaymentState {
@@ -21,6 +22,7 @@ interface PaymentState {
   currentPage: number;
   createResponse: any;
   verifyResponse: any;
+  statusResponse: PaymentStatusResponse | null;
 }
 
 const initialState: PaymentState = {
@@ -35,6 +37,7 @@ const initialState: PaymentState = {
   currentPage: 1,
   createResponse: null,
   verifyResponse: null,
+  statusResponse: null,
 };
 
 // Async thunk to fetch paginated payments
@@ -139,6 +142,23 @@ export const verifyPayment = createAsyncThunk(
   }
 );
 
+// Async thunk to fetch payment status (Public)
+export const fetchPaymentStatus = createAsyncThunk(
+  'payment/status',
+  async (payment_id: string, { rejectWithValue }) => {
+    try {
+      const response = await api.get<PaymentStatusResponse>(
+        `/payment/status/${payment_id}`
+      );
+      return response.data;
+    } catch (err: any) {
+      return rejectWithValue(
+        err.response?.data?.message || 'Failed to fetch payment status'
+      );
+    }
+  }
+);
+
 // Async thunk to fetch client payments
 export const fetchClientPayments = createAsyncThunk(
   'payment/fetchClient',
@@ -232,6 +252,18 @@ const paymentSlice = createSlice({
         state.verifyResponse = action.payload;
       })
       .addCase(verifyPayment.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(fetchPaymentStatus.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchPaymentStatus.fulfilled, (state, action) => {
+        state.loading = false;
+        state.statusResponse = action.payload;
+      })
+      .addCase(fetchPaymentStatus.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       })
